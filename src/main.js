@@ -19,59 +19,41 @@ function secondsToMinutesSeconds(seconds) {
 
 async function getSongs(folder) {
   currFolder = folder;
-  // Use relative paths for Vercel
-  let a = await fetch(`./${folder}/`);
-  console.log(`FOLDER: ./${folder}/`);
-  let response = await a.text();
-  let div = document.createElement("div");
-  div.innerHTML = response;
-  let as = div.getElementsByTagName("a");
-  songs = [];
-  for (let index = 0; index < as.length; index++) {
-    const element = as[index];
-    if (element.href.includes(`${folder}`)) {
-      if (element.href.endsWith(".mp3")) {
-        songs.push(element.href.split("/").pop());
-      }
-    } else {
-      if (element.href.endsWith(".mp3")) {
-        let songName = element.href.split("%5C").pop();
-        songs.push(songName);
-      }
+
+  try {
+    let response = await fetch(`./${folder}/info.json`);
+    let data = await response.json();
+
+    songs = data.songs;
+
+    // Render songs into UI
+    let songUL = document.querySelector(".songlist ul");
+    songUL.innerHTML = "";
+    for (const song of songs) {
+      songUL.innerHTML += `
+        <li>
+          <img class="invert" width="34" src="./src/svg/music.svg" alt="">
+          <div class="info">
+              <div>${song.replace(".mp3", "")}</div>
+              <div>Syed Jarrar</div>
+          </div>
+          <div class="playnow">
+              <span>Play Now</span>
+              <img class="invert" src="./src/svg/play.svg" alt="">
+          </div>
+        </li>`;
     }
-  }
 
-  // Show all the songs in the playlist
-  let songUL = document
-    .querySelector(".songlist")
-    .getElementsByTagName("ul")[0];
-  songUL.innerHTML = "";
-  for (const song of songs) {
-    songUL.innerHTML =
-      songUL.innerHTML +
-      `<li><img class="invert" width="34" src="./src/svg/music.svg" alt="">
-                            <div class="info">
-                                <div> ${song.replace(".mp3", "")}</div>
-                                <div>Syed Jarrar</div>
-                            </div>
-                            <div class="playnow">
-                                <span>Play Now</span>
-                                <img class="invert" src="./src/svg/play.svg" alt="">
-                            </div> </li>`;
-  }
-
-  // Attach an event listener to each song
-  Array.from(
-    document.querySelector(".songlist").getElementsByTagName("li")
-  ).forEach((e) => {
-    e.addEventListener("click", (element) => {
-      let songName =
-        e.querySelector(".info").firstElementChild.innerHTML.trim() + ".mp3";
-      playMusic(songName);
+    // Click event for each song
+    Array.from(songUL.getElementsByTagName("li")).forEach((e, index) => {
+      e.addEventListener("click", () => playMusic(songs[index]));
     });
-  });
 
-  return songs;
+    return songs;
+  } catch (error) {
+    console.error("Error loading songs:", error);
+    return [];
+  }
 }
 
 const playMusic = (track, pause = false) => {
@@ -92,75 +74,42 @@ const playMusic = (track, pause = false) => {
 };
 
 async function displayAlbums() {
-  console.log("displaying albums");
-  let a = await fetch(`./src/songs/`);
-  let response = await a.text();
-  let div = document.createElement("div");
-  div.innerHTML = response;
-  let anchors = div.getElementsByTagName("a");
   let cardContainer = document.querySelector(".cardContainer");
-  let array = Array.from(anchors);
   cardContainer.innerHTML = "";
 
-  for (let index = 0; index < array.length; index++) {
-    const e = array[index];
-    if (
-      (e.href.includes("/src/songs/") &&
-        e.href.split("/src/songs/")[1] !== "" &&
-        !e.href.includes(".htaccess")) ||
-      e.href.includes("%5Csrc%5Csongs%5C")
-    ) {
-      console.log(`e.href = ${e.href}`);
+  // Albums you want to display
+  const albums = ["ncs", "edm"];
 
-      let folder = e.href.includes("/src/songs/")
-        ? e.href.split("/").pop().replace("/", "")
-        : e.href.split("%5C").pop().split("%5C").slice(-2)[0].replace("/", "");
-      console.log("Found Folder", folder);
+  for (let folder of albums) {
+    try {
+      let metaResponse = await fetch(`./src/songs/${folder}/info.json`);
+      let metadata = await metaResponse.json();
 
-      try {
-        // Get the metadata of the folder
-        let metaResponse = await fetch(`./src/songs/${folder}/info.json`);
-        let metadata;
-
-        if (metaResponse.ok) {
-          metadata = await metaResponse.json();
-        } else {
-          // Default metadata if info.json doesn't exist
-          metadata = {
-            title: folder.charAt(0).toUpperCase() + folder.slice(1),
-            description: "Music Collection",
-          };
-        }
-
-        cardContainer.innerHTML =
-          cardContainer.innerHTML +
-          ` <div data-folder="${folder}" class="card">
-              <div class="play">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 20V4L19 12L5 20Z" stroke="#141B34" fill="#000" stroke-width="1.5"
-                          stroke-linejoin="round" />
-                  </svg>
-              </div>
-
-              <img src="./src/songs/${folder}/cover.jpg" alt="Album Cover" onerror="this.src='./src/svg/logo.svg'">
-              <h2>${metadata.title}</h2>
-              <p>${metadata.description}</p>
-          </div>`;
-      } catch (error) {
-        console.error(`Error loading album ${folder}:`, error);
-      }
+      cardContainer.innerHTML += `
+        <div data-folder="src/songs/${folder}" class="card">
+          <div class="play">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 20V4L19 12L5 20Z" stroke="#141B34" fill="#000"
+                    stroke-width="1.5" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <img src="./src/songs/${folder}/cover.jpg" alt="Album Cover"
+               onerror="this.src='./src/svg/logo.svg'">
+          <h2>${metadata.title}</h2>
+          <p>${metadata.description}</p>
+        </div>`;
+    } catch (error) {
+      console.error(`Error loading album ${folder}:`, error);
     }
   }
 
-  // Load the playlist whenever card is clicked
+  // Click event → load songs from that album
   Array.from(document.getElementsByClassName("card")).forEach((e) => {
     e.addEventListener("click", async (item) => {
-      console.log("Fetching Songs");
-      songs = await getSongs(`src/songs/${item.currentTarget.dataset.folder}`);
-      if (songs && songs.length > 0) {
-        playMusic(songs[0]);
-      }
+      let folder = item.currentTarget.dataset.folder;
+      songs = await getSongs(folder);
+      if (songs.length > 0) playMusic(songs[0]);
     });
   });
 }
