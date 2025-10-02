@@ -1,4 +1,18 @@
 {
-  "title": "Non CopyRigts",
-  "description": "All songs are non copy rights free to use"
+  "title": "NCS",
+  "description": "NoCopyrightSounds Album",
+  "songs": [
+    "main-to-ummati.mp3",
+    "main-to-ummati2.mp3",
+    "main-to-ummati3.mp3",
+    "main-to-ummati4.mp3",
+    "sue-muntaha.mp3",
+    "sue-muntaha2.mp3",
+    "sue-muntaha3.mp3",
+    "sue-muntaha4.mp3",
+    "qasida-burda.mp3",
+    "qasida-burda2.mp3",
+    "qasida-burda3.mp3",
+    "qasida-burda4.mp3"
+  ]
 }
